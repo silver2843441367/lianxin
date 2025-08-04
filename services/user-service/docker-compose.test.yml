@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  user-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=test
+      - PORT=3001
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_NAME=lianxin
+      - DB_USER=root
+      - DB_PASSWORD=Mahmud1334@
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - JWT_ACCESS_TOKEN_SECRET=test-jwt-secret-key-for-access-tokens
+      - JWT_REFRESH_TOKEN_SECRET=test-jwt-secret-key-for-refresh-tokens
+      - ENCRYPTION_PRIMARY_KEY=test-encryption-primary-key-32-chars
+      - ENCRYPTION_SECONDARY_KEY=test-encryption-secondary-key-32-chars
+    depends_on:
+      - mysql
+      - redis
+    networks:
+      - user-service-network
+    volumes:
+      - ./logs:/app/logs
+    restart: unless-stopped
+
+  mysql:
+    image: mysql:8.0
+    environment:
+      - MYSQL_ROOT_PASSWORD=Mahmud1334@
+      - MYSQL_DATABASE=lianxin
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=Mahmud1334@
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./migrations:/docker-entrypoint-initdb.d
+    networks:
+      - user-service-network
+    command: --default-authentication-plugin=mysql_native_password
+
+  redis:
+    image: redis:6.0-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - user-service-network
+    command: redis-server --appendonly yes
+
+  adminer:
+    image: adminer
+    ports:
+      - "8080:8080"
+    networks:
+      - user-service-network
+    depends_on:
+      - mysql
+
+volumes:
+  mysql_data:
+  redis_data:
+
+
+networks:
+  user-service-network:
+    driver: bridge
