@@ -68,30 +68,10 @@ router.put('/settings',
 router.put('/password-change',
   authMiddleware.authenticate,
   rateLimitMiddleware.accountActionRateLimit,
-  [
-    body('current_password').notEmpty().withMessage('Current password is required'),
-    body('new_password').notEmpty().withMessage('New password is required'),
-    body('confirm_password').custom((value, { req }) => {
-      if (value !== req.body.new_password) {
-        throw new Error('Password confirmation does not match');
-      }
-      return true;
-    })
-  ],
   async (req, res, next) => {
     try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        throw ValidationError.multipleFields('Password change validation failed',
-          errors.array().map(err => ({
-            field: err.path,
-            message: err.msg,
-            value: err.value
-          }))
-        );
-      }
-
       const userId = req.user.userId;
+      // Use validation utility instead of express-validator
       const passwordData = validationUtil.validatePasswordChange(req.body);
 
       await settingsService.changePassword(userId, passwordData);
@@ -158,26 +138,10 @@ router.post('/phone/otp',
 router.put('/phone-number-change',
   authMiddleware.authenticate,
   rateLimitMiddleware.accountActionRateLimit,
-  [
-    body('new_phone').notEmpty().withMessage('New phone number is required'),
-    body('verification_id').isUUID().withMessage('Valid verification ID is required'),
-    body('otp_code').isLength({ min: 6, max: 6 }).withMessage('OTP must be 6 digits'),
-    body('password').notEmpty().withMessage('Password is required')
-  ],
   async (req, res, next) => {
     try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        throw ValidationError.multipleFields('Phone change validation failed',
-          errors.array().map(err => ({
-            field: err.path,
-            message: err.msg,
-            value: err.value
-          }))
-        );
-      }
-
       const userId = req.user.userId;
+      // Use validation utility instead of express-validator
       const phoneChangeData = validationUtil.validatePhoneChange(req.body);
 
       const result = await settingsService.changePhoneNumber(userId, phoneChangeData);
@@ -202,31 +166,17 @@ router.put('/phone-number-change',
 router.post('/deactivate',
   authMiddleware.authenticate,
   rateLimitMiddleware.accountActionRateLimit,
-  [
-    body('password').notEmpty().withMessage('Password is required'),
-    body('reason').optional().isLength({ max: 500 }).withMessage('Reason must not exceed 500 characters')
-  ],
   async (req, res, next) => {
     try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        throw ValidationError.multipleFields('Deactivation validation failed',
-          errors.array().map(err => ({
-            field: err.path,
-            message: err.msg,
-            value: err.value
-          }))
-        );
-      }
-
       const userId = req.user.userId;
-      const { password, reason } = req.body;
+      // Use validation utility instead of express-validator
+      const deactivationData = validationUtil.validateAccountDeactivation(req.body);
 
-      await settingsService.deactivateAccount(userId, password, reason);
+      await settingsService.deactivateAccount(userId, deactivationData.password, deactivationData.reason);
 
       logger.info('Account deactivated', {
         userId,
-        reason,
+        reason: deactivationData.reason,
         requestId: req.requestId
       });
 
@@ -244,27 +194,13 @@ router.post('/deactivate',
 router.post('/request-deletion',
   authMiddleware.authenticate,
   rateLimitMiddleware.accountActionRateLimit,
-  [
-    body('password').notEmpty().withMessage('Password is required'),
-    body('confirmation').equals('DELETE_MY_ACCOUNT').withMessage('You must type "DELETE_MY_ACCOUNT" to confirm')
-  ],
   async (req, res, next) => {
     try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        throw ValidationError.multipleFields('Deletion validation failed',
-          errors.array().map(err => ({
-            field: err.path,
-            message: err.msg,
-            value: err.value
-          }))
-        );
-      }
-
       const userId = req.user.userId;
-      const { password } = req.body;
+      // Use validation utility instead of express-validator
+      const deletionData = validationUtil.validateAccountDeletion(req.body);
 
-      await settingsService.requestAccountDeletion(userId, password);
+      await settingsService.requestAccountDeletion(userId, deletionData.password);
 
       logger.info('Account deletion requested', {
         userId,

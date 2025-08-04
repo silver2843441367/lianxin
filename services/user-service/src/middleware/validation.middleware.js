@@ -83,15 +83,11 @@ class ValidationMiddleware {
       const phone = req.body.phone || req.body.new_phone;
       
       if (phone) {
-        const validation = validationUtil.validatePhoneNumber(phone);
+        // Use validation utility which now includes schema validation
+        validationUtil.validatePhoneNumber(phone);
         
-        // Replace with formatted phone number
-        if (req.body.phone) {
-          req.body.phone = validation.formatted;
-        }
-        if (req.body.new_phone) {
-          req.body.new_phone = validation.formatted;
-        }
+        // Note: Phone formatting is handled in the service layer
+        // to maintain separation of concerns
       }
 
       next();
@@ -396,6 +392,52 @@ class ValidationMiddleware {
   }
 
   /**
+   * Validate UUID fields
+   */
+  validateUUID(fields) {
+    return (req, res, next) => {
+      try {
+        fields.forEach(field => {
+          const value = req.body[field] || req.params[field] || req.query[field];
+          if (value) {
+            validationUtil.validateUUID(value);
+          }
+        });
+
+        next();
+      } catch (error) {
+        logger.warn('UUID validation failed', {
+          fields,
+          error: error.message,
+          requestId: req.requestId
+        });
+        next(error);
+      }
+    };
+  }
+
+  /**
+   * Validate JWT token format
+   */
+  validateJWTToken(req, res, next) {
+    try {
+      const authHeader = req.get('Authorization');
+      if (authHeader) {
+        const token = authHeader.replace('Bearer ', '');
+        validationUtil.validateJWTToken(token);
+      }
+
+      next();
+    } catch (error) {
+      logger.warn('JWT token validation failed', {
+        error: error.message,
+        requestId: req.requestId
+      });
+      next(error);
+    }
+  }
+
+  /**
    * Content moderation validation
    */
   validateContent(req, res, next) {
@@ -406,22 +448,27 @@ class ValidationMiddleware {
         const value = req.body[field];
         
         if (value && typeof value === 'string') {
-          // Basic content filtering
-          const prohibitedPatterns = [
-            /\b(fuck|shit|damn|bitch)\b/gi,
-            /\b(政治|政府|共产党)\b/g,
-            /\b(色情|黄色|成人)\b/g,
-            /\b(赌博|博彩|彩票)\b/g
-          ];
+          // Use the bio content validation from validation utility
+          if (field === 'bio') {
+            validationUtil.validateBioContent(value);
+          } else {
+            // Basic content filtering for other fields
+            const prohibitedPatterns = [
+              /\b(fuck|shit|damn|bitch)\b/gi,
+              /\b(政治|政府|共产党)\b/g,
+              /\b(色情|黄色|成人)\b/g,
+              /\b(赌博|博彩|彩票)\b/g
+            ];
 
-          for (const pattern of prohibitedPatterns) {
-            if (pattern.test(value)) {
-              throw ValidationError.custom(
-                field,
-                `${field} contains prohibited content`,
-                value,
-                'content_moderation'
-              );
+            for (const pattern of prohibitedPatterns) {
+              if (pattern.test(value)) {
+                throw ValidationError.custom(
+                  field,
+                  `${field} contains prohibited content`,
+                  value,
+                  'content_moderation'
+                );
+              }
             }
           }
         }

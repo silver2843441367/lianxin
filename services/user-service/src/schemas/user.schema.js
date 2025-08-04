@@ -103,32 +103,7 @@ const profileUpdateSchema = Joi.object({
 });
 
 // Password change schema
-const passwordChangeSchema = Joi.object({
-  current_password: passwordSchema.messages({
-    'any.required': 'Current password is required'
-  }),
-  new_password: passwordSchema.messages({
-    'any.required': 'New password is required'
-  }),
-  confirm_password: Joi.string()
-    .valid(Joi.ref('new_password'))
-    .required()
-    .messages({
-      'any.only': 'Password confirmation does not match',
-      'any.required': 'Password confirmation is required'
-    })
-});
-
-// Phone number change schema
-const phoneChangeSchema = Joi.object({
-  new_phone: phoneSchema,
-  verification_id: uuidSchema,
-  otp_code: otpCodeSchema,
-  password: passwordSchema.messages({
-    'any.required': 'Password is required for phone number change'
-  })
-});
-
+// Note: passwordChangeSchema and phoneChangeSchema moved to auth.schema.js for better organization
 
 // Account deactivation schema
 const accountDeactivationSchema = Joi.object({
@@ -172,9 +147,8 @@ module.exports = {
 
   // User-specific schemas
   profileUpdateSchema,
-  passwordChangeSchema,
-  phoneChangeSchema,
   accountDeactivationSchema,
   accountDeletionSchema,
-  fileUploadSchema
+  fileUploadSchema,
+  sessionRevocationSchema
 };

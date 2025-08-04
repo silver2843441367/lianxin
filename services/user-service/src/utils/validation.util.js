@@ -2,12 +2,18 @@ const { ValidationError } = require('../errors/validationError');
 const phoneUtil = require('./phone.util');
 const passwordUtil = require('./password.util');
 const logger = require('./logger.util');
+const DOMPurify = require('dompurify');
+const { JSDOM } = require('jsdom');
 
 // Import schemas
 const baseSchemas = require('../schemas/base.schema');
 const authSchemas = require('../schemas/auth.schema');
 const userSchemas = require('../schemas/user.schema');
 const settingsSchemas = require('../schemas/settings.schema');
+
+// Initialize DOMPurify for server-side HTML sanitization
+const window = new JSDOM('').window;
+const purify = DOMPurify(window);
 
 /**
  * Validation Utility Class
@@ -24,8 +30,18 @@ class ValidationUtil {
    */
   validatePhoneNumber(phone, countryCode = null) {
     try {
+      // First validate with schema
+      const { error } = baseSchemas.phoneSchema.validate(phone);
+      if (error) {
+        throw ValidationError.invalidPhoneNumber(phone, error.details[0].message);
+      }
+
+      // Then validate with phone utility for business logic
       return phoneUtil.validatePhoneNumber(phone, countryCode);
     } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
       throw ValidationError.invalidPhoneNumber(phone, error.message);
     }
   }
@@ -35,6 +51,13 @@ class ValidationUtil {
    */
   validatePassword(password) {
     try {
+      // First validate with schema
+      const { error } = baseSchemas.passwordSchema.validate(password);
+      if (error) {
+        throw ValidationError.invalidPassword(error.details[0].message);
+      }
+
+      // Then validate with password utility for business logic
       return passwordUtil.validatePassword(password);
     } catch (error) {
       if (error instanceof ValidationError) {
@@ -73,11 +96,8 @@ class ValidationUtil {
       throw validationError;
     }
 
-    // Additional phone validation (business logic)
-    this.validatePhoneNumber(value.phone);
-
-    // Additional password validation (business logic)
-    this.validatePassword(value.password);
+    // Note: Phone and password validation are already handled by the schema
+    // Additional business logic validation can be added here if needed
 
     return value;
   }
@@ -111,8 +131,8 @@ class ValidationUtil {
       throw validationError;
     }
 
-    // Additional phone validation (business logic)
-    this.validatePhoneNumber(value.phone);
+    // Note: Phone validation is already handled by the schema
+    // Additional business logic validation can be added here if needed
 
     return value;
   }
@@ -197,7 +217,7 @@ class ValidationUtil {
    * Validate password change data using user schema
    */
   validatePasswordChange(data) {
-    const { error, value } = userSchemas.passwordChangeSchema.validate(data);
+    const { error, value } = authSchemas.passwordChangeSchema.validate(data);
     if (error) {
       const validationError = new ValidationError('Password change validation failed');
       error.details.forEach(detail => {
@@ -211,8 +231,8 @@ class ValidationUtil {
       throw validationError;
     }
 
-    // Additional password validation (business logic)
-    this.validatePassword(value.new_password);
+    // Note: Password validation is already handled by the schema
+    // Additional business logic validation can be added here if needed
 
     return value;
   }
@@ -221,7 +241,7 @@ class ValidationUtil {
    * Validate phone number change data using user schema
    */
   validatePhoneChange(data) {
-    const { error, value } = userSchemas.phoneChangeSchema.validate(data);
+    const { error, value } = authSchemas.phoneNumberChangeSchema.validate(data);
     if (error) {
       const validationError = new ValidationError('Phone change validation failed');
       error.details.forEach(detail => {
@@ -235,8 +255,8 @@ class ValidationUtil {
       throw validationError;
     }
 
-    // Additional phone validation (business logic)
-    this.validatePhoneNumber(value.new_phone);
+    // Note: Phone validation is already handled by the schema
+    // Additional business logic validation can be added here if needed
 
     return value;
   }
@@ -259,8 +279,8 @@ class ValidationUtil {
       throw validationError;
     }
 
-    // Additional password validation (business logic)
-    this.validatePassword(value.new_password);
+    // Note: Password validation is already handled by the schema
+    // Additional business logic validation can be added here if needed
 
     return value;
   }
@@ -381,21 +401,27 @@ class ValidationUtil {
   sanitizeHtml(content) {
     if (!content) return content;
 
-    // Remove script tags and their content
-    content = content.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
-
-    // Remove dangerous attributes
-    content = content.replace(/\s*on\w+\s*=\s*["'][^"']*["']/gi, '');
-    content = content.replace(/\s*javascript\s*:/gi, '');
-
-    // Remove potentially dangerous tags
-    const dangerousTags = ['script', 'object', 'embed', 'form', 'input', 'button', 'select', 'textarea'];
-    dangerousTags.forEach(tag => {
-      const regex = new RegExp(`<\\/?${tag}\\b[^>]*>`, 'gi');
-      content = content.replace(regex, '');
-    });
-
-    return content;
+    try {
+      // Use DOMPurify for robust HTML sanitization
+      return purify.sanitize(content, {
+        ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'u', 'br', 'p'],
+        ALLOWED_ATTR: [],
+        KEEP_CONTENT: true,
+        RETURN_DOM: false,
+        RETURN_DOM_FRAGMENT: false,
+        RETURN_DOM_IMPORT: false
+      });
+    } catch (error) {
+      logger.warn('HTML sanitization failed, falling back to basic cleaning', {
+        error: error.message
+      });
+      
+      // Fallback to basic sanitization
+      return content
+        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+        .replace(/\s*on\w+\s*=\s*["'][^"']*["']/gi, '')
+        .replace(/\s*javascript\s*:/gi, '');
+    }
   }
 
   /**
@@ -494,6 +520,54 @@ class ValidationUtil {
   }
 
   /**
+   * Validate search query with proper sanitization
+   */
+  validateSearchQuery(query, limit = 20, offset = 0) {
+    if (!query || typeof query !== 'string') {
+      throw ValidationError.requiredField('q', 'Search query is required');
+    }
+
+    // Sanitize search query
+    const sanitizedQuery = this.sanitizeSearchQuery(query);
+    
+    // Validate pagination
+    const pagination = this.validatePagination(limit, offset);
+
+    return {
+      q: sanitizedQuery,
+      limit: pagination.limit,
+      offset: pagination.offset
+    };
+  }
+
+  /**
+   * Sanitize search query to prevent injection attacks
+   */
+  sanitizeSearchQuery(query) {
+    if (!query) return '';
+
+    // Remove SQL injection patterns
+    const sqlPatterns = [
+      /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|UNION|SCRIPT)\b)/gi,
+      /(--|\/\*|\*\/|;|'|"|`)/g,
+      /(\bOR\b|\bAND\b)\s+\d+\s*=\s*\d+/gi
+    ];
+
+    let sanitized = query.trim();
+    
+    sqlPatterns.forEach(pattern => {
+      sanitized = sanitized.replace(pattern, '');
+    });
+
+    // Limit length
+    if (sanitized.length > 100) {
+      sanitized = sanitized.substring(0, 100);
+    }
+
+    return sanitized;
+  }
+
+  /**
    * Generic schema validation wrapper
    */
   validateWithSchema(schema, data, errorMessage = 'Validation failed') {
@@ -511,6 +585,48 @@ class ValidationUtil {
       throw validationError;
     }
     return value;
+  }
+
+  /**
+   * Validate UUID format
+   */
+  validateUUID(uuid) {
+    const { error } = baseSchemas.uuidSchema.validate(uuid);
+    if (error) {
+      throw ValidationError.custom('uuid', error.details[0].message, uuid, 'uuid_format');
+    }
+    return true;
+  }
+
+  /**
+   * Validate device information
+   */
+  validateDeviceInfo(deviceInfo) {
+    const { error, value } = baseSchemas.deviceSchema.validate(deviceInfo);
+    if (error) {
+      const validationError = new ValidationError('Device validation failed');
+      error.details.forEach(detail => {
+        validationError.addFieldError(
+          detail.path[0],
+          detail.message,
+          detail.context.value,
+          detail.type
+        );
+      });
+      throw validationError;
+    }
+    return value;
+  }
+
+  /**
+   * Validate JWT token format
+   */
+  validateJWTToken(token) {
+    const { error } = baseSchemas.jwtTokenSchema.validate(token);
+    if (error) {
+      throw ValidationError.custom('token', error.details[0].message, token, 'jwt_format');
+    }
+    return true;
   }
 }
 

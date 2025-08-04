@@ -98,6 +98,52 @@ const passwordResetSchema = Joi.object({
     })
 });
 
+// Password change schema
+const passwordChangeSchema = Joi.object({
+  current_password: passwordSchema.messages({
+    'any.required': 'Current password is required'
+  }),
+  new_password: passwordSchema.messages({
+    'any.required': 'New password is required'
+  }),
+  confirm_password: Joi.string()
+    .valid(Joi.ref('new_password'))
+    .required()
+    .messages({
+      'any.only': 'Password confirmation does not match',
+      'any.required': 'Password confirmation is required'
+    })
+});
+
+// Phone number change schema
+const phoneNumberChangeSchema = Joi.object({
+  new_phone: phoneSchema,
+  verification_id: uuidSchema,
+  otp_code: otpCodeSchema,
+  password: passwordSchema.messages({
+    'any.required': 'Password is required for phone number change'
+  })
+});
+
+// Two-factor authentication schema
+const twoFactorAuthSchema = Joi.object({
+  user_id: Joi.number()
+    .integer()
+    .positive()
+    .required(),
+  method: Joi.string()
+    .valid('sms', 'app', 'email')
+    .required(),
+  code: Joi.string()
+    .length(6)
+    .pattern(/^\d{6}$/)
+    .required(),
+  backup_code: Joi.string()
+    .length(8)
+    .pattern(/^[A-Z0-9]{8}$/)
+    .optional()
+});
+
 // Session validation schema
 const sessionValidationSchema = Joi.object({
   session_id: uuidSchema.messages({
