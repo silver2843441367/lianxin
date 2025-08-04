@@ -50,27 +50,15 @@ router.get('/sessions',
 router.delete('/sessions/:sessionId',
   authMiddleware.authenticate,
   rateLimitMiddleware.sessionRateLimit,
-  [
-    body('password').notEmpty().withMessage('Password is required to revoke session')
-  ],
   async (req, res, next) => {
     try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        throw ValidationError.multipleFields('Session revocation validation failed',
-          errors.array().map(err => ({
-            field: err.path,
-            message: err.msg,
-            value: err.value
-          }))
-        );
-      }
-
       const userId = req.user.userId;
       const { sessionId } = req.params;
-      const { password } = req.body;
+      
+      // Use validation utility instead of express-validator
+      const revocationData = validationUtil.validateSessionRevocation(req.body);
 
-      await sessionService.revokeSessionWithPassword(sessionId, userId, password);
+      await sessionService.revokeSessionWithPassword(sessionId, userId, revocationData.password);
 
       logger.info('Session revoked successfully', {
         userId,
@@ -92,27 +80,15 @@ router.delete('/sessions/:sessionId',
 router.post('/sessions/revoke-all',
   authMiddleware.authenticate,
   rateLimitMiddleware.sessionRateLimit,
-  [
-    body('password').notEmpty().withMessage('Password is required to revoke all sessions')
-  ],
   async (req, res, next) => {
     try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        throw ValidationError.multipleFields('Session revocation validation failed',
-          errors.array().map(err => ({
-            field: err.path,
-            message: err.msg,
-            value: err.value
-          }))
-        );
-      }
-
       const userId = req.user.userId;
       const currentSessionId = req.user.sessionId;
-      const { password } = req.body;
+      
+      // Use validation utility instead of express-validator
+      const revocationData = validationUtil.validateSessionRevocation(req.body);
 
-      const revokedCount = await sessionService.revokeAllUserSessionsWithPassword(userId, password, currentSessionId);
+      const revokedCount = await sessionService.revokeAllUserSessionsWithPassword(userId, revocationData.password, currentSessionId);
 
       logger.info('All other sessions revoked', {
         userId,
