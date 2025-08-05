@@ -835,35 +835,32 @@ Future<UserProfile> getPublicUserProfile(String userId) async {
   "data": {
     "settings": {
       "privacy": {
-        "profile_visibility": "friends",
-        "search_visibility": true,
-        "show_online_status": false,
-        "allow_friend_requests": true,
-        "message_permissions": "friends"
+        "profile_visibility":"public",
+        "search_visibility":true,
+        "show_online_status":true,
+        "allow_friend_requests":true,
+        "message_permissions":"friends",
+        "allow_tagging":"friends"
       },
       "notifications": {
-        "push_notifications": true,
-        "sms_notifications": false,
-        "friend_requests": true,
-        "messages": true,
-        "likes": false,
-        "comments": true,
-        "shares": false
+        "push_notifications":true,
+        "friend_requests":true,
+        "messages":true,
+        "likes":true,
+        "comments":true,
+        "shares":false,
+        "mentions":true,
+        "group_activities":true,
+        "event_reminders":true,
+        "security_alerts":true
       },
       "display": {
         "theme": "light",
         "language": "zh-CN",
-        "timezone": "Asia/Shanghai",
         "font_size": "medium"
       },
       "security": {
         "login_alerts": true,
-        "session_timeout": 1800
-      },
-      "content": {
-        "auto_play_videos": false,
-        "show_sensitive_content": false,
-        "content_language": "zh-CN"
       }
     }
   },
