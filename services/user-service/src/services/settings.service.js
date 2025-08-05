@@ -96,7 +96,7 @@ class SettingsService {
   /**
    * Change user password
    */
-  async changePassword(userId, passwordData) {
+  async changePassword(userId, passwordData, sessionId = null) {
     try {
       const { current_password, new_password } = passwordData;
 
@@ -131,7 +131,7 @@ class SettingsService {
       });
 
       // Revoke all other sessions except current one
-      await sessionService.revokeAllUserSessions(userId, req?.user?.sessionId);
+      await sessionService.revokeAllUserSessions(userId, null, sessionId);
 
       logger.info('Password changed successfully', {
         userId

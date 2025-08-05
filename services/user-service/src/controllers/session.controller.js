@@ -1,5 +1,6 @@
 const express = require('express');
 const sessionService = require('../services/session.service');
+const validationUtil = require('../utils/validation.util');
 const logger = require('../utils/logger.util');
 const apiResponse = require('../../../shared/utils/api.response');
 const authMiddleware = require('../middleware/auth.middleware');
@@ -56,7 +57,7 @@ router.delete('/sessions/:sessionId',
       // Use validation utility
       const revocationData = validationUtil.validateSessionRevocation(req.body);
 
-      await sessionService.revokeSessionWithPassword(sessionId, userId, revocationData.password);
+      await sessionService.revokeSession(sessionId, userId, revocationData.password);
 
       logger.info('Session revoked successfully', {
         userId,
@@ -86,7 +87,7 @@ router.post('/sessions/revoke-all',
       // Use validation utility
       const revocationData = validationUtil.validateSessionRevocation(req.body);
 
-      const revokedCount = await sessionService.revokeAllUserSessionsWithPassword(userId, revocationData.password, currentSessionId);
+      const revokedCount = await sessionService.revokeAllUserSessions(userId, revocationData.password, currentSessionId);
 
       logger.info('All other sessions revoked', {
         userId,

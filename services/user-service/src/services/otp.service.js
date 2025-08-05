@@ -5,7 +5,7 @@ const validationUtil = require('../utils/validation.util');
 const { ValidationError } = require('../errors/validationError');
 const { AuthError } = require('../errors/authError');
 const { AppError } = require('../errors/AppError');
-const appConfig = require('../config/app.config');
+const securityConfig = require('../config/security.config');
 
 /**
  * OTP Service
@@ -13,9 +13,9 @@ const appConfig = require('../config/app.config');
  */
 class OtpService {
   constructor() {
-    this.otpLength = appConfig.otpLength;
-    this.otpExpiryMinutes = appConfig.otpExpiryMinutes;
-    this.otpMaxAttempts = appConfig.otpMaxAttempts;
+    this.otpLength = securityConfig.app.otpLength;
+    this.otpExpiryMinutes = securityConfig.app.otpExpiryMinutes;
+    this.otpMaxAttempts = securityConfig.app.otpMaxAttempts;
   }
 
   /**

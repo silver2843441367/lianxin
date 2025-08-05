@@ -1,107 +1,97 @@
 const dotenv = require('dotenv');
+const securityConfig = require('./security.config');
 
 // Load environment variables
 dotenv.config();
 
+// Re-export consolidated configuration from security.config.js
 module.exports = {
-  // Server configuration
-  port: process.env.PORT || 3001,
-  nodeEnv: process.env.NODE_ENV || 'development',
-  
-  // Service information
-  serviceName: 'user-service',
-  serviceVersion: process.env.npm_package_version || '1.0.0',
+  // Basic app settings (non-security related)
+  serviceName: securityConfig.app.serviceName,
+  serviceVersion: securityConfig.app.serviceVersion,
+  port: securityConfig.app.port,
+  nodeEnv: securityConfig.app.nodeEnv,
   
   // API configuration
-  apiPrefix: '/api/v1',
-  allowedOrigins: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : ['*'],
-  
-  // Security settings
-  corsEnabled: process.env.CORS_ENABLED === 'true',
-  helmetEnabled: process.env.HELMET_ENABLED !== 'false',
-  
-  // Rate limiting
-  rateLimitEnabled: process.env.RATE_LIMIT_ENABLED !== 'false',
-  rateLimitWindowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 3600000, // 1 hour
-  rateLimitMaxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 1000,
+  apiPrefix: securityConfig.app.apiPrefix,
+  allowedOrigins: securityConfig.app.allowedOrigins,
   
   // File upload settings
-  maxFileSize: parseInt(process.env.MAX_FILE_SIZE) || 10485760, // 10MB
-  uploadDir: process.env.UPLOAD_DIR || './uploads',
+  maxFileSize: securityConfig.app.maxFileSize,
+  uploadDir: securityConfig.app.uploadDir,
   
   // Pagination defaults
-  defaultPageSize: parseInt(process.env.DEFAULT_PAGE_SIZE) || 20,
-  maxPageSize: parseInt(process.env.MAX_PAGE_SIZE) || 100,
+  defaultPageSize: securityConfig.app.defaultPageSize,
+  maxPageSize: securityConfig.app.maxPageSize,
   
   // Session settings
-  maxActiveSessionsPerUser: parseInt(process.env.MAX_ACTIVE_SESSIONS_PER_USER) || 5,
-  sessionCleanupInterval: parseInt(process.env.SESSION_CLEANUP_INTERVAL) || 3600000, // 1 hour
+  maxActiveSessionsPerUser: securityConfig.app.maxActiveSessionsPerUser,
+  sessionCleanupInterval: securityConfig.app.sessionCleanupInterval,
   
   // OTP settings
-  otpExpiryMinutes: parseInt(process.env.OTP_EXPIRY_MINUTES) || 5,
-  otpLength: parseInt(process.env.OTP_LENGTH) || 6,
-  otpMaxAttempts: parseInt(process.env.OTP_MAX_ATTEMPTS) || 3,
+  otpExpiryMinutes: securityConfig.app.otpExpiryMinutes,
+  otpLength: securityConfig.app.otpLength,
+  otpMaxAttempts: securityConfig.app.otpMaxAttempts,
   
   // Account settings
-  accountLockoutMinutes: parseInt(process.env.ACCOUNT_LOCKOUT_MINUTES) || 30,
-  maxFailedLoginAttempts: parseInt(process.env.MAX_FAILED_LOGIN_ATTEMPTS) || 5,
-  accountDeletionGracePeriodDays: parseInt(process.env.ACCOUNT_DELETION_GRACE_PERIOD_DAYS) || 15,
+  accountLockoutMinutes: securityConfig.app.accountLockoutMinutes,
+  maxFailedLoginAttempts: securityConfig.app.maxFailedLoginAttempts,
+  accountDeletionGracePeriodDays: securityConfig.app.accountDeletionGracePeriodDays,
   
   // China compliance settings
-  enableRealNameVerification: process.env.ENABLE_REAL_NAME_VERIFICATION === 'true',
-  enableContentModeration: process.env.ENABLE_CONTENT_MODERATION !== 'false',
-  dataResidencyRegion: process.env.DATA_RESIDENCY_REGION || 'cn-hangzhou',
+  enableRealNameVerification: securityConfig.app.enableRealNameVerification,
+  enableContentModeration: securityConfig.app.enableContentModeration,
+  dataResidencyRegion: securityConfig.app.dataResidencyRegion,
   
   // Logging configuration
-  logLevel: process.env.LOG_LEVEL || 'info',
-  logFormat: process.env.LOG_FORMAT || 'json',
-  enableAuditLogging: process.env.ENABLE_AUDIT_LOGGING !== 'false',
+  logLevel: securityConfig.app.logLevel,
+  logFormat: securityConfig.app.logFormat,
+  enableAuditLogging: securityConfig.app.enableAuditLogging,
   
   // Health check settings
-  healthCheckEnabled: process.env.HEALTH_CHECK_ENABLED !== 'false',
-  healthCheckInterval: parseInt(process.env.HEALTH_CHECK_INTERVAL) || 30000, // 30 seconds
+  healthCheckEnabled: securityConfig.app.healthCheckEnabled,
+  healthCheckInterval: securityConfig.app.healthCheckInterval,
   
   // Feature flags
-  features: {
-    biometricAuth: process.env.FEATURE_BIOMETRIC_AUTH === 'true',
-    socialLogin: process.env.FEATURE_SOCIAL_LOGIN === 'true',
-    advancedAnalytics: process.env.FEATURE_ADVANCED_ANALYTICS === 'true',
-    profileVerification: process.env.FEATURE_PROFILE_VERIFICATION === 'true'
-  },
+  features: securityConfig.app.features,
   
   // External service endpoints
-  mediaServiceUrl: process.env.MEDIA_SERVICE_URL || 'http://localhost:3007',
-  notificationServiceUrl: process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:3006',
+  mediaServiceUrl: securityConfig.app.mediaServiceUrl,
+  notificationServiceUrl: securityConfig.app.notificationServiceUrl,
   
   // Timezone and localization
-  defaultTimezone: process.env.DEFAULT_TIMEZONE || 'Asia/Shanghai',
-  supportedLanguages: process.env.SUPPORTED_LANGUAGES ? process.env.SUPPORTED_LANGUAGES.split(',') : ['zh-CN', 'en-US'],
+  defaultTimezone: securityConfig.app.defaultTimezone,
+  supportedLanguages: securityConfig.app.supportedLanguages,
   
   // Performance settings
-  compressionEnabled: process.env.COMPRESSION_ENABLED !== 'false',
-  compressionThreshold: parseInt(process.env.COMPRESSION_THRESHOLD) || 1024,
+  compressionEnabled: securityConfig.app.compressionEnabled,
+  compressionThreshold: securityConfig.app.compressionThreshold,
   
   // Development settings
-  enableSwagger: process.env.ENABLE_SWAGGER === 'true',
-  enableDebugMode: process.env.ENABLE_DEBUG_MODE === 'true',
+  enableSwagger: securityConfig.app.enableSwagger,
+  enableDebugMode: securityConfig.app.enableDebugMode,
   
   // Monitoring settings
-  enableMetrics: process.env.ENABLE_METRICS !== 'false',
-  metricsPort: parseInt(process.env.METRICS_PORT) || 9090,
+  enableMetrics: securityConfig.app.enableMetrics,
+  metricsPort: securityConfig.app.metricsPort,
   
   // Database settings
-  enableDatabaseLogging: process.env.ENABLE_DATABASE_LOGGING === 'true',
-  databaseConnectionPoolSize: parseInt(process.env.DATABASE_CONNECTION_POOL_SIZE) || 10,
+  enableDatabaseLogging: securityConfig.app.enableDatabaseLogging,
+  databaseConnectionPoolSize: securityConfig.app.databaseConnectionPoolSize,
   
   // Cache settings
-  enableCaching: process.env.ENABLE_CACHING !== 'false',
-  cacheDefaultTtl: parseInt(process.env.CACHE_DEFAULT_TTL) || 3600, // 1 hour
+  enableCaching: securityConfig.app.enableCaching,
+  cacheDefaultTtl: securityConfig.app.cacheDefaultTtl,
+
+  // Security settings (reference to security config)
+  security: securityConfig,
   
-  // Security headers
-  securityHeaders: {
-    enableHsts: process.env.ENABLE_HSTS !== 'false',
-    enableXssProtection: process.env.ENABLE_XSS_PROTECTION !== 'false',
-    enableNoSniff: process.env.ENABLE_NO_SNIFF !== 'false',
-    enableFrameGuard: process.env.ENABLE_FRAME_GUARD !== 'false'
-  }
+  // Rate limiting (reference to security config)
+  rateLimit: securityConfig.rateLimit,
+  
+  // CORS (reference to security config)
+  cors: securityConfig.cors,
+  
+  // Headers (reference to security config)
+  headers: securityConfig.headers
 };

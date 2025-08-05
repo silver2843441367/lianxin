@@ -1,16 +1,16 @@
 const rateLimit = require('express-rate-limit');
 const RedisStore = require('rate-limit-redis');
 const redis = require('redis');
-const redisConfig = require('../config/redis.config');
+const securityConfig = require('../config/security.config');
 const logger = require('../utils/logger.util');
 const { AuthError } = require('../errors/authError');
 
 // Create Redis client for rate limiting
 const redisClient = redis.createClient({
-  host: redisConfig.host,
-  port: redisConfig.port,
-  password: redisConfig.password,
-  db: redisConfig.db
+  host: process.env.REDIS_HOST || 'localhost',
+  port: parseInt(process.env.REDIS_PORT) || 6379,
+  password: process.env.REDIS_PASSWORD || null,
+  db: parseInt(process.env.REDIS_DB) || 0
 });
 
 redisClient.on('error', (err) => {
@@ -75,8 +75,8 @@ class RateLimitMiddleware {
    */
   get globalRateLimit() {
     return this.createRateLimit({
-      windowMs: 60 * 60 * 1000, // 1 hour
-      max: 1000, // 1000 requests per hour
+      windowMs: securityConfig.rateLimit.windowMs,
+      max: securityConfig.rateLimit.max,
       message: 'Too many requests from this IP'
     });
   }
@@ -86,8 +86,8 @@ class RateLimitMiddleware {
    */
   get authRateLimit() {
     return this.createRateLimit({
-      windowMs: 15 * 60 * 1000, // 15 minutes
-      max: 10, // 10 attempts per 15 minutes
+      windowMs: securityConfig.rateLimit.rules.auth.windowMs,
+      max: securityConfig.rateLimit.rules.auth.max,
       keyGenerator: (req) => `auth:${req.ip}`,
       message: 'Too many authentication attempts'
     });
@@ -98,8 +98,8 @@ class RateLimitMiddleware {
    */
   get registerRateLimit() {
     return this.createRateLimit({
-      windowMs: 60 * 60 * 1000, // 1 hour
-      max: 5, // 5 registrations per hour per IP
+      windowMs: securityConfig.rateLimit.rules.register.windowMs,
+      max: securityConfig.rateLimit.rules.register.max,
       keyGenerator: (req) => `register:${req.ip}`,
       message: 'Too many registration attempts'
     });
@@ -110,8 +110,8 @@ class RateLimitMiddleware {
    */
   get loginRateLimit() {
     return this.createRateLimit({
-      windowMs: 15 * 60 * 1000, // 15 minutes
-      max: 10, // 10 login attempts per 15 minutes
+      windowMs: securityConfig.rateLimit.rules.login.windowMs,
+      max: securityConfig.rateLimit.rules.login.max,
       keyGenerator: (req) => `login:${req.ip}:${req.body.phone || 'unknown'}`,
       message: 'Too many login attempts'
     });
@@ -122,8 +122,8 @@ class RateLimitMiddleware {
    */
   get otpRateLimit() {
     return this.createRateLimit({
-      windowMs: 5 * 60 * 1000, // 5 minutes
-      max: 5, // 5 OTP requests per 5 minutes
+      windowMs: securityConfig.rateLimit.rules.otp.windowMs,
+      max: securityConfig.rateLimit.rules.otp.max,
       keyGenerator: (req) => `otp:${req.ip}:${req.body.phone || req.body.new_phone || 'unknown'}`,
       message: 'Too many OTP requests'
     });
@@ -134,8 +134,8 @@ class RateLimitMiddleware {
    */
   get passwordResetRateLimit() {
     return this.createRateLimit({
-      windowMs: 60 * 60 * 1000, // 1 hour
-      max: 3, // 3 password reset attempts per hour
+      windowMs: securityConfig.rateLimit.rules.passwordReset.windowMs,
+      max: securityConfig.rateLimit.rules.passwordReset.max,
       keyGenerator: (req) => `pwd_reset:${req.ip}:${req.body.phone || 'unknown'}`,
       message: 'Too many password reset attempts'
     });

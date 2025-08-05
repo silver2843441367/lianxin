@@ -1,9 +1,10 @@
 const { UserSession } = require('../models');
+const { User } = require('../models');
 const logger = require('../utils/logger.util');
 const jwtUtil = require('../utils/jwt.util');
 const { AuthError } = require('../errors/authError');
 const { AppError } = require('../errors/AppError');
-const appConfig = require('../config/app.config');
+const securityConfig = require('../config/security.config');
 
 /**
  * Session Service
@@ -11,8 +12,8 @@ const appConfig = require('../config/app.config');
  */
 class SessionService {
   constructor() {
-    this.maxActiveSessionsPerUser = appConfig.maxActiveSessionsPerUser;
-    this.sessionCleanupInterval = appConfig.sessionCleanupInterval;
+    this.maxActiveSessionsPerUser = securityConfig.app.maxActiveSessionsPerUser;
+    this.sessionCleanupInterval = securityConfig.app.sessionCleanupInterval;
   }
 
   /**
@@ -213,7 +214,7 @@ class SessionService {
   /**
    * Revoke specific session
    */
-  async revokeSession(sessionId, userId = null) {
+  async revokeSession(sessionId, userId = null, password = null) {
     try {
       const session = await UserSession.findBySessionId(sessionId);
       
@@ -224,6 +225,19 @@ class SessionService {
       // Verify user ownership if userId provided
       if (userId && session.user_id !== userId) {
         throw AuthError.forbidden('Cannot revoke session of another user');
+      }
+
+      // Verify password if provided
+      if (password && userId) {
+        const user = await User.findByPk(userId);
+        if (!user) {
+          throw AuthError.unauthorized('User not found');
+        }
+        
+        const isValidPassword = await user.validatePassword(password);
+        if (!isValidPassword) {
+          throw AuthError.invalidCredentials('Invalid password');
+        }
       }
 
       await session.revoke();
@@ -252,8 +266,21 @@ class SessionService {
   /**
    * Revoke all sessions for a user
    */
-  async revokeAllUserSessions(userId, excludeSessionId = null) {
+  async revokeAllUserSessions(userId, password = null, excludeSessionId = null) {
     try {
+      // Verify password if provided
+      if (password) {
+        const user = await User.findByPk(userId);
+        if (!user) {
+          throw AuthError.unauthorized('User not found');
+        }
+        
+        const isValidPassword = await user.validatePassword(password);
+        if (!isValidPassword) {
+          throw AuthError.invalidCredentials('Invalid password');
+        }
+      }
+
       const sessions = await UserSession.findActiveByUserId(userId);
       
       let revokedCount = 0;

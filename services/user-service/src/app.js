@@ -6,7 +6,7 @@ const rateLimit = require('express-rate-limit');
 const { body, validationResult } = require('express-validator');
 
 // Internal imports
-const appConfig = require('./config/app.config');
+const securityConfig = require('./config/security.config');
 const databaseConfig = require('./config/database.config');
 const redisConfig = require('./config/redis.config');
 const logger = require('./utils/logger.util');
@@ -35,7 +35,7 @@ const redisClient = require('../../shared/libraries/cache/redis.client');
 class UserServiceApp {
   constructor() {
     this.app = express();
-    this.port = appConfig.port;
+    this.port = securityConfig.app.port;
     this.setupMiddleware();
     this.setupRoutes();
     this.setupErrorHandling();
@@ -62,22 +62,24 @@ class UserServiceApp {
 
     // CORS configuration
     this.app.use(cors({
-      origin: appConfig.allowedOrigins,
+      origin: securityConfig.cors.origin,
       credentials: true,
       optionsSuccessStatus: 200,
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key', 'X-Device-ID', 'X-App-Version']
+      methods: securityConfig.cors.methods,
+      allowedHeaders: securityConfig.cors.allowedHeaders
     }));
 
     // Body parsing middleware
-    this.app.use(express.json({ limit: '10mb' }));
-    this.app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+    this.app.use(express.json({ limit: `${securityConfig.app.maxFileSize}b` }));
+    this.app.use(express.urlencoded({ extended: true, limit: `${securityConfig.app.maxFileSize}b` }));
 
     // Compression middleware
     this.app.use(compression());
 
     // Global rate limiting
-    this.app.use(rateLimitMiddleware.globalRateLimit);
+    if (securityConfig.rateLimit.enabled) {
+      this.app.use(rateLimitMiddleware.globalRateLimit);
+    }
 
     // Request logging middleware
     this.app.use((req, res, next) => {
@@ -108,7 +110,7 @@ class UserServiceApp {
         status: 'healthy',
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
-        version: process.env.npm_package_version || '1.0.0'
+        version: securityConfig.app.serviceVersion
       }, 'Service is healthy'));
     });
 

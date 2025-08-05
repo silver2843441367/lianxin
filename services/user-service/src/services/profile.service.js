@@ -1,5 +1,6 @@
 const { User } = require('../models');
 const encryptionService = require('./encryption.service');
+const cloudStorageService = require('./cloud-storage.service');
 const logger = require('../utils/logger.util');
 const { AppError } = require('../errors/AppError');
 const { ValidationError } = require('../errors/validationError');
@@ -98,20 +99,14 @@ class ProfileService {
         throw AppError.notFound('User not found');
       }
 
-      // Generate unique filename
-      const fileExtension = file.originalname.split('.').pop();
-      const fileName = `avatar_${userId}_${Date.now()}.${fileExtension}`;
-
-      // In a real implementation, this would upload to cloud storage (Alibaba OSS)
-      // For now, we'll simulate the upload and return a mock URL
-      const avatarUrl = `https://cdn.lianxin.com/avatars/${fileName}`;
+      // Upload to cloud storage
+      const avatarUrl = await cloudStorageService.uploadAvatar(userId, file);
 
       // Update user avatar URL
       await user.update({ avatar_url: avatarUrl });
 
       logger.info('Avatar uploaded successfully', {
         userId,
-        fileName,
         fileSize: file.size,
         avatarUrl
       });
@@ -138,20 +133,14 @@ class ProfileService {
         throw AppError.notFound('User not found');
       }
 
-      // Generate unique filename
-      const fileExtension = file.originalname.split('.').pop();
-      const fileName = `cover_${userId}_${Date.now()}.${fileExtension}`;
-
-      // In a real implementation, this would upload to cloud storage (Alibaba OSS)
-      // For now, we'll simulate the upload and return a mock URL
-      const coverPhotoUrl = `https://cdn.lianxin.com/covers/${fileName}`;
+      // Upload to cloud storage
+      const coverPhotoUrl = await cloudStorageService.uploadCoverPhoto(userId, file);
 
       // Update user cover photo URL
       await user.update({ cover_photo_url: coverPhotoUrl });
 
       logger.info('Cover photo uploaded successfully', {
         userId,
-        fileName,
         fileSize: file.size,
         coverPhotoUrl
       });

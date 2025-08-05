@@ -146,5 +146,6 @@ module.exports = {
   profileUpdateSchema,
   accountDeactivationSchema,
   accountDeletionSchema,
-  fileUploadSchema
+  fileUploadSchema,
+  sessionRevocationSchema
 };

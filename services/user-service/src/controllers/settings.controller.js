@@ -2,6 +2,7 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const settingsService = require('../services/settings.service');
 const validationUtil = require('../utils/validation.util');
+const validationUtil = require('../utils/validation.util');
 const logger = require('../utils/logger.util');
 const apiResponse = require('../../../shared/utils/api.response');
 const { ValidationError } = require('../errors/validationError');
@@ -71,10 +72,11 @@ router.put('/password-change',
   async (req, res, next) => {
     try {
       const userId = req.user.userId;
+      const sessionId = req.user.sessionId;
       // Use validation utility to validate password change
       const passwordData = validationUtil.validatePasswordChange(req.body);
 
-      await settingsService.changePassword(userId, passwordData);
+      await settingsService.changePassword(userId, passwordData, sessionId);
 
       logger.info('Password changed successfully', {
         userId,
