@@ -166,10 +166,10 @@ flowchart TD
     G --> H[Return session list]
     
     H --> I[User selects session to revoke]
-    I --> J[DELETE /user/sessions/:id]
-    J --> K{Password provided?}
-    K -->|No| L[Return validation error]
-    K -->|Yes| M{Password correct?}
+    I --> J[DELETE /user/sessions/:id<br/>(with password)]
+    J --> K{Password correct?}
+    K -->|No| L[Return invalid password]
+    K -->|Yes| M{User owns session?}
     M -->|No| N[Return invalid password]
     M -->|Yes| O{User owns session?}
     O -->|No| P[Return forbidden error]
@@ -177,9 +177,9 @@ flowchart TD
     Q --> R[Log security event]
     R --> S[Return success]
     
-    style A fill:#e1f5fe
-    style H,S fill:#c8e6c9
-    style D,L,N,P fill:#ffcdd2
+    style A fill:#e1f5fe;
+    style H,S fill:#c8e6c9;
+    style D,L,N,P fill:#ffcdd2;
 ```
 
 ## 7. Account Deletion Flow

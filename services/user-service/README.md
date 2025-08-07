@@ -15,7 +15,7 @@ The User Service is a critical microservice responsible for managing all user-re
 - Device fingerprinting and tracking
 
 ### 👤 Profile Management
-- Complete profile CRUD operations
+- Complete profile CRUD operations and secure avatar/cover photo upload via cloud storage
 - Avatar and cover photo upload
 - Privacy controls and settings
 - User search and discovery
@@ -157,6 +157,10 @@ docker run -p 3001:3001 user-service
 ## Configuration
 
 ### Environment Variables
+
+**Note on Configuration:**
+Security-related configurations are primarily managed in `src/config/security.config.js`. `src/config/app.config.js` re-exports these for convenience and includes general application settings. Ensure consistency between these files.
+
 
 Key environment variables (see `.env.example` for complete list):
 

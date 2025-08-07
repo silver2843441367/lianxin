@@ -186,7 +186,7 @@ sequenceDiagram
         API-->>Client: 400 File validation error
     else File valid
         API->>API: Generate unique filename
-        API->>API: Upload to cloud storage (Alibaba OSS)
+        API->>CloudStorage: Upload to Alibaba OSS
         alt Upload failed
             API-->>Client: 500 Upload error
         else Upload successful
@@ -604,10 +604,10 @@ sequenceDiagram
     participant Client as Flutter Client
     participant API as User Service API
     participant Auth as Auth Middleware
-    participant Storage as Cloud Storage
+    participant CloudStorage as Cloud Storage
     participant DB as MySQL Database
     participant Audit as Audit Service
-
+    
     Note over Client,Audit: Avatar Upload
     Client->>Client: User selects image
     Client->>Client: Validate file locally<br/>(size, format)

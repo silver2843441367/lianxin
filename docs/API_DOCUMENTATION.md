@@ -1094,8 +1094,7 @@ Future<void> changePassword({
 **Request Body**:
 ```json
 {
-  "password": "CurrentPassword123!",
-  "reason": "Taking a break from social media"
+  "password": "CurrentPassword123!"
 }
 ```
 
@@ -1123,8 +1122,7 @@ Future<void> changePassword({
 **Request Body**:
 ```json
 {
-  "password": "CurrentPassword123!",
-  "confirmation": "DELETE_MY_ACCOUNT"
+  "password": "CurrentPassword123!"
 }
 ```
 
